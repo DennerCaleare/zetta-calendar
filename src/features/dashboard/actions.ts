@@ -1,9 +1,15 @@
-"use server";
+import { supabase } from "@/lib/supabase";
+import { mapReservation, mapRoom, type Reservation } from "@/types/database";
 
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
+export async function getReservations(): Promise<Reservation[]> {
+  const { data, error } = await supabase
+    .from("reservations")
+    .select("*, rooms(*), profiles(name)")
+    .order("start_time");
+
+  if (error) throw error;
+  return (data ?? []).map(mapReservation);
+}
 
 interface ReservationInput {
   id?: string;
@@ -14,108 +20,90 @@ interface ReservationInput {
   endTime: string;
 }
 
-export async function getReservations() {
-  const reservations = await db.reservation.findMany({
-    include: {
-      room: true,
-      user: {
-        select: {
-          name: true,
-        },
-      },
-    },
-  });
+export async function saveReservationAction(input: ReservationInput) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Não autorizado");
 
-  return reservations;
-}
+  // Check conflicts
+  let conflictQuery = supabase
+    .from("reservations")
+    .select("id")
+    .eq("room_id", input.roomId)
+    .eq("status", "ACTIVE")
+    .lt("start_time", input.endTime)
+    .gt("end_time", input.startTime);
 
-export async function saveReservationAction(data: ReservationInput) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  if (input.id) conflictQuery = conflictQuery.neq("id", input.id);
 
-  if (!session) throw new Error("Não autorizado");
-
-  const startTime = new Date(data.startTime);
-  const endTime = new Date(data.endTime);
-
-  const conflict = await db.reservation.findFirst({
-    where: {
-      roomId: data.roomId,
-      status: "ACTIVE",
-      ...(data.id ? { id: { not: data.id } } : {}),
-      AND: [{ startTime: { lt: endTime } }, { endTime: { gt: startTime } }],
-    },
-  });
-
-  if (conflict) {
+  const { data: conflicts } = await conflictQuery;
+  if (conflicts && conflicts.length > 0) {
     throw new Error("Já existe uma reserva nesse horário");
   }
 
-  if (data.id) {
-    await db.reservation.update({
-      where: { id: data.id },
-      data: {
-        title: data.title,
-        description: data.description,
-        roomId: data.roomId,
-        startTime,
-        endTime,
-      },
-    });
+  if (input.id) {
+    const { error } = await supabase
+      .from("reservations")
+      .update({
+        title: input.title,
+        description: input.description ?? null,
+        room_id: input.roomId,
+        start_time: input.startTime,
+        end_time: input.endTime,
+      })
+      .eq("id", input.id);
+    if (error) throw error;
   } else {
-    await db.reservation.create({
-      data: {
-        title: data.title,
-        description: data.description,
-        roomId: data.roomId,
-        startTime,
-        endTime,
-        userId: session.user.id,
-      },
+    const { error } = await supabase.from("reservations").insert({
+      title: input.title,
+      description: input.description ?? null,
+      room_id: input.roomId,
+      start_time: input.startTime,
+      end_time: input.endTime,
+      user_id: user.id,
+      status: "ACTIVE",
     });
+    if (error) throw error;
   }
-
-  revalidatePath("/dashboard");
 }
 
 export async function cancelReservationAction(id: string) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Não autorizado");
 
-  if (!session) {
-    throw new Error("Não autorizado");
-  }
+  const { data: reservation } = await supabase
+    .from("reservations")
+    .select("id, user_id, status")
+    .eq("id", id)
+    .single();
 
-  const reservation = await db.reservation.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      userId: true,
-      status: true,
-    },
-  });
+  if (!reservation) throw new Error("Reserva não encontrada");
 
-  if (!reservation) {
-    throw new Error("Reserva não encontrada");
-  }
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
 
-  const isOwner = reservation.userId === session.user.id;
-  const isAdmin = session.user.role === "ADMIN";
+  const isOwner = reservation.user_id === user.id;
+  const isAdmin = profile?.role === "ADMIN";
 
-  if (!isOwner && !isAdmin) {
+  if (!isOwner && !isAdmin)
     throw new Error("Você não tem permissão para cancelar esta reserva");
-  }
 
-  if (reservation.status === "CANCELLED") {
+  if (reservation.status === "CANCELLED")
     throw new Error("Esta reserva já está cancelada");
-  }
 
-  await db.reservation.update({
-    where: { id },
-    data: { status: "CANCELLED" },
-  });
+  const { error } = await supabase
+    .from("reservations")
+    .update({ status: "CANCELLED" })
+    .eq("id", id);
 
-  revalidatePath("/dashboard");
+  if (error) throw error;
 }
+
+export { mapRoom };
+

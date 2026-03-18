@@ -51,7 +51,7 @@ interface Room {
 interface EditReservation {
   id: string;
   roomId: string;
-  userId: string | null;
+  userId?: string | null;
   title: string;
   description?: string | null;
   startTime: Date;

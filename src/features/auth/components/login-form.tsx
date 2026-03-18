@@ -1,14 +1,12 @@
-"use client";
-
 import { InputForm } from "@/components/ui/input-form";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import { authClient } from "@/lib/auth-client";
+import { supabase } from "@/lib/supabase";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, FlaskConical, Lock, Mail } from "lucide-react";
-import Link from "next/link";
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import z from "zod";
 import { loginSchema } from "../schemas";
@@ -50,6 +48,7 @@ function RippleButton({ children, isLoading }: { children: React.ReactNode; isLo
 
 /* ─── LoginForm ────────────────────────────────────────── */
 const LoginForm = () => {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [shake, setShake] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
@@ -66,21 +65,20 @@ const LoginForm = () => {
   };
 
   const onSubmit = async (data: z.infer<typeof loginSchema>) => {
-    try {
-      await authClient.signIn.email(
-        { email: data.email, password: data.password, callbackURL: "/" },
-        {
-          onSuccess: () => toast.success("Login realizado com sucesso!"),
-          onError: (ctx) => {
-            setShake(true);
-            setTimeout(() => setShake(false), 600);
-            toast.error(ctx.error.message || "Credenciais inválidas. Tente novamente.");
-          },
-        },
-      );
-    } catch {
-      throw new Error("Erro inesperado. Tente novamente.");
+    const { error } = await supabase.auth.signInWithPassword({
+      email: data.email,
+      password: data.password,
+    });
+
+    if (error) {
+      setShake(true);
+      setTimeout(() => setShake(false), 600);
+      toast.error(error.message || "Credenciais inválidas. Tente novamente.");
+      return;
     }
+
+    toast.success("Login realizado com sucesso!");
+    navigate("/dashboard");
   };
 
   return (
@@ -144,8 +142,7 @@ const LoginForm = () => {
               error={form.formState.errors.email?.message}
               className="pl-10 rounded-xl border-slate-200 focus:ring-2 focus:ring-primary/20 transition-all duration-200"
               onFocus={() => setFocusedField("email")}
-              onBlur={() => setFocusedField(null)}
-              {...form.register("email")}
+              {...form.register("email", { onBlur: () => setFocusedField(null) })}
             />
             <div
               className={`absolute bottom-0 left-0 h-0.5 bg-primary rounded-full transition-all duration-300 ${
@@ -173,8 +170,7 @@ const LoginForm = () => {
               error={form.formState.errors.password?.message}
               className="pl-10 pr-10 rounded-xl border-slate-200 focus:ring-2 focus:ring-primary/20 transition-all duration-200"
               onFocus={() => setFocusedField("password")}
-              onBlur={() => setFocusedField(null)}
-              {...form.register("password")}
+              {...form.register("password", { onBlur: () => setFocusedField(null) })}
             />
             <button
               type="button"
@@ -199,7 +195,7 @@ const LoginForm = () => {
       <p className="text-center text-sm text-slate-500">
         Não tem uma conta?{" "}
         <Link
-          href="/auth/register"
+          to="/auth/register"
           className="font-semibold text-primary hover:underline underline-offset-4 transition-colors"
         >
           Criar conta

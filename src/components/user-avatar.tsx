@@ -1,10 +1,7 @@
-"use client";
-
 import { useSession } from "@/lib/auth-client";
 import { getInitials } from "@/lib/utils";
 import { ChevronDown, LogOut, Settings, User } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import LogoutButton from "./logout-button";
 
@@ -55,12 +52,10 @@ const UserAvatar = () => {
       >
         <div className="relative size-10">
           {user?.image ? (
-            <Image
+            <img
               src={user.image}
               alt={user.name || "Avatar do usuário"}
-              fill
-              className="rounded-full border-2 border-white object-cover shadow-sm"
-              priority
+              className="h-full w-full rounded-full border-2 border-white object-cover shadow-sm"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center rounded-full border-2 border-white bg-primary text-sm font-bold text-white shadow-sm">
@@ -90,7 +85,7 @@ const UserAvatar = () => {
           </div>
 
           <Link
-            href="#"
+            to="#"
             className="flex items-center space-x-3 px-4 py-2 text-sm text-slate-600 transition-colors hover:bg-accent hover:text-accent-foreground"
           >
             <User className="size-4" />
@@ -98,7 +93,7 @@ const UserAvatar = () => {
           </Link>
           {user?.role === "ADMIN" && (
             <Link
-              href="/dashboard/settings"
+              to="/dashboard/settings"
               onClick={() => setIsOpen(false)}
               className="flex items-center space-x-3 px-4 py-2 text-sm text-slate-600 transition-colors hover:bg-accent hover:text-accent-foreground"
             >

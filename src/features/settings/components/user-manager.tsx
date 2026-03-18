@@ -1,5 +1,3 @@
-"use client";
-
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,7 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { User } from "@/lib/generated/prisma/client";
+import type { Profile, UserRole } from "@/types/database";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Pencil, Plus, Trash2, Users } from "lucide-react";
 import { useState } from "react";
@@ -47,7 +45,7 @@ import z from "zod";
 import { createUserSchema } from "../schemas";
 import { createUser, deleteUser, updateUser } from "../user";
 
-type UserDTO = Pick<User, "id" | "name" | "email" | "role">;
+type UserDTO = Pick<Profile, "id" | "name" | "email" | "role">;
 type FormData = z.infer<typeof createUserSchema>;
 
 function UserForm({
@@ -169,9 +167,9 @@ export default function UserManager({ users }: { users?: UserDTO[] }) {
 
     try {
       await updateUser(editingUser.id, {
-        name: data.name,
-        email: data.email,
-        role: data.role,
+        name: data.name as string,
+        email: data.email as string,
+        role: data.role as "USER" | "ADMIN",
       });
       toast.success("Usuário atualizado", {
         description: changes.length

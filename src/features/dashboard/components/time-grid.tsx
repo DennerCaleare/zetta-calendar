@@ -1,4 +1,4 @@
-import { Reservation, Room } from "@/lib/generated/prisma/client";
+import type { Reservation, Room } from "@/types/database";
 import { generateTimeSlots, TimeSlot } from "@/lib/reservation-utils";
 import { Clock } from "lucide-react";
 

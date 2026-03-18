@@ -1,5 +1,5 @@
 import { ReservationWithUser } from "@/features/dashboard/types";
-import { Room } from "@/lib/generated/prisma/client";
+import type { Room } from "@/types/database";
 import { Clock, MessageSquare, Presentation, User } from "lucide-react";
 
 interface ReservationListProps {

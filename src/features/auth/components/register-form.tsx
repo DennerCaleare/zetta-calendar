@@ -1,12 +1,9 @@
-"use client";
-
 import { InputForm } from "@/components/ui/input-form";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Lock, Mail, User } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Link, useNavigate } from "react-router-dom";
 import { useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -122,10 +119,10 @@ function PasswordStrengthMeter({ password }: { password: string }) {
 
 /* ─── RegisterForm ───────────────────────────────────────*/
 const RegisterForm = () => {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordValue, setPasswordValue] = useState("");
-  const router = useRouter();
 
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
@@ -139,7 +136,7 @@ const RegisterForm = () => {
     form.reset();
     setTimeout(() => {
       toast.info("Redirecionando para o login...");
-      router.push("/auth/login");
+      navigate("/auth/login");
     }, 3000);
   };
 
@@ -221,9 +218,9 @@ const RegisterForm = () => {
 
         <p className="text-[11px] text-slate-400">
           Ao criar sua conta, você concorda com os{" "}
-          <Link href="#" className="text-primary hover:underline">Termos de Serviço</Link>
+          <Link to="#" className="text-primary hover:underline">Termos de Serviço</Link>
           {" "}e a{" "}
-          <Link href="#" className="text-primary hover:underline">Política de Privacidade</Link>.
+          <Link to="#" className="text-primary hover:underline">Política de Privacidade</Link>.
         </p>
 
         <RippleButton isLoading={form.formState.isSubmitting}>
@@ -233,7 +230,7 @@ const RegisterForm = () => {
 
       <p className="text-center text-sm text-slate-600">
         Já possui uma conta?{" "}
-        <Link href="/auth/login" className="font-bold text-primary underline-offset-4 hover:underline transition-colors">
+        <Link to="/auth/login" className="font-bold text-primary underline-offset-4 hover:underline transition-colors">
           Fazer login
         </Link>
       </p>

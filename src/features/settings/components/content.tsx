@@ -1,9 +1,7 @@
-"use client";
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, Building2, Plus } from "lucide-react";
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import RoomEditor from "./room-editor";
 
@@ -12,7 +10,7 @@ import {
   deleteRoom,
   updateRoom,
 } from "@/features/settings/actions";
-import { UserRole } from "@/lib/generated/prisma/enums";
+import type { UserRole } from "@/types/database";
 import UserManager from "./user-manager";
 
 type Room = {
@@ -32,26 +30,30 @@ type UserDTO = {
 export default function Content({
   rooms,
   users,
+  onRefresh,
 }: {
   rooms: Room[];
   users: UserDTO[];
+  onRefresh: () => void;
 }) {
-  const handleAddRoom = () => {
-    createRoom();
+  const handleAddRoom = async () => {
+    await createRoom();
+    onRefresh();
     toast("Sala criada", {
       description: "Configure os detalhes da nova sala.",
     });
   };
 
-  const handleDeleteRoom = (id: string, name: string) => {
-    deleteRoom(id);
+  const handleDeleteRoom = async (id: string, name: string) => {
+    await deleteRoom(id);
+    onRefresh();
     toast("Sala removida", { description: `${name} foi removida.` });
   };
 
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-3 sm:px-6">
-        <Link href="/dashboard">
+        <Link to="/dashboard">
           <Button variant="ghost" size="icon" className="shrink-0">
             <ArrowLeft className="h-4 w-4" />
           </Button>
@@ -93,13 +95,14 @@ export default function Content({
               <RoomEditor
                 key={room.id}
                 room={room}
-                onSave={(updated) =>
-                  updateRoom(updated.id, {
+                onSave={async (updated) => {
+                  await updateRoom(updated.id, {
                     name: updated.name,
                     capacity: updated.capacity,
                     resources: updated.resources,
-                  })
-                }
+                  });
+                  onRefresh();
+                }}
                 onDelete={() => handleDeleteRoom(room.id, room.name)}
               />
             ))}

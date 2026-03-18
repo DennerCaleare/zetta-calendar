@@ -1,4 +1,4 @@
-import { Reservation } from "./generated/prisma/client";
+import type { Reservation } from "@/types/database";
 
 export const BUSINESS_HOURS = { start: 7, end: 17 };
 export const MIN_DURATION_MINUTES = 30;

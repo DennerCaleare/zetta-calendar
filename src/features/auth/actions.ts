@@ -1,59 +1,46 @@
-"use server";
-
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 import z from "zod";
 import { loginSchema, registerSchema } from "./schemas";
 
 export async function Login(data: z.infer<typeof loginSchema>) {
   const validatedFields = loginSchema.safeParse(data);
-
   if (!validatedFields.success) {
-    return {
-      error: "Falha ao fazer login, verifique os dados digitados",
-    };
+    return { error: "Falha ao fazer login, verifique os dados digitados" };
   }
 
-  const { email, password } = validatedFields.data;
+  const { email, password } = validatedFields.data as { email: string; password: string };
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-  try {
-    await auth.api.signInEmail({
-      body: {
-        email,
-        password,
-      },
-      headers: await headers(),
-    });
-  } catch {
-    return { error: "Email ou senha incorretos" };
-  }
-  redirect("/dashboard");
+  if (error) return { error: "Email ou senha incorretos" };
+  return { success: true };
 }
 
 export async function Register(data: z.infer<typeof registerSchema>) {
   const validatedFields = registerSchema.safeParse(data);
-
   if (!validatedFields.success) {
-    return {
-      error: "Falha ao fazer login, verifique os dados digitados",
-    };
+    return { error: "Falha ao criar conta, verifique os dados digitados" };
   }
 
-  const { name, email, password } = validatedFields.data;
+  const { name, email, password } = validatedFields.data as { name: string; email: string; password: string; confirmPassword: string };
 
-  try {
-    await auth.api.signUpEmail({
-      body: {
-        name,
-        email,
-        password,
-      },
-      headers: await headers(),
+  const { data: authData, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { name } },
+  });
+
+  if (error) return { error: error.message || "Erro ao criar conta" };
+
+  if (authData.user) {
+    await supabase.from("profiles").upsert({
+      id: authData.user.id,
+      name,
+      email,
+      role: "USER",
     });
-
-    return { success: true };
-  } catch {
-    return { error: "Email ou senha incorretos" };
   }
+
+  return { success: true };
 }
+
+

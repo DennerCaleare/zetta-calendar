@@ -1,5 +1,5 @@
-import { Reservation } from "@/lib/generated/prisma/client";
+import type { Reservation } from "@/types/database";
 
-export type ReservationWithUser = Reservation & {
-  user: { name: string } | null;
-};
+// Reservation already includes `user: { name: string } | null`
+export type ReservationWithUser = Reservation;
+

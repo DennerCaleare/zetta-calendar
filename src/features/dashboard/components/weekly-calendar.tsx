@@ -1,4 +1,4 @@
-import { Reservation, Room } from "@/lib/generated/prisma/client";
+import type { Reservation, Room } from "@/types/database";
 import { BUSINESS_HOURS } from "@/lib/reservation-utils";
 import { useMemo } from "react";
 

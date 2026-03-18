@@ -1,6 +1,4 @@
-"use client";
-
-import { Room } from "@/lib/generated/prisma/client";
+import type { Room } from "@/types/database";
 import { Bluetooth, Mic, Tv, Users, Webcam, Wind } from "lucide-react";
 
 const resourceIcons: Record<string, React.ReactNode> = {

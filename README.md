@@ -20,7 +20,6 @@ O **Zetta Calendar** nasceu para resolver esse problema. Com ele, qualquer colab
 - [Sobre o Projeto](#sobre-o-projeto)
 - [Funcionalidades](#funcionalidades)
 - [Stack Tecnológica](#stack-tecnológica)
-- [Testes](#testes)
 - [Começando](#começando)
 
 ## Sobre o Projeto
@@ -46,70 +45,46 @@ A solução oferece uma interface moderna e intuitiva onde os colaboradores cons
 
 **Autenticação & Segurança**
 
-- [x] Cadastro e login seguro de usuários
+- [x] Cadastro e login seguro de usuários via Supabase Auth
 - [x] Proteção de rotas e sessões autenticadas
-
-**Qualidade & Testes**
-
-- [x] Testes unitários com Jest
-- [x] Conversão e validação de horários (`timeToMinutes`, `isValidTimeRange`)
-- [x] Detecção de conflitos de reserva (`checkTimeConflict`)
-- [x] Geração de slots e opções de horário (`generateTimeSlots`, `getTimeOptions`)
-- [x] Formatação de datas em pt-BR (`formatDate`)
+- [x] Row Level Security (RLS) no banco de dados
 
 ## Stack Tecnológica
 
-| Tecnologia                                          | Descrição                                                          |
-| --------------------------------------------------- | ------------------------------------------------------------------ |
-| **[Next.js](https://nextjs.org/)**                  | Framework React com SSR/SSG e otimizações avançadas de performance |
-| **[Better Auth](https://www.better-auth.com/)**     | Autenticação completa e segura para aplicações modernas            |
-| **[Prisma](https://www.prisma.io/)**                | ORM robusto para consultas rápidas e intuitivas ao banco de dados  |
-| **[Tailwind CSS](https://tailwindcss.com/)**        | Framework CSS utilitário para layouts responsivos e customizáveis  |
-| **[Shadcn/ui](https://ui.shadcn.com/)**             | Componentes pré-construídos e acessíveis baseados em Tailwind      |
-| **[React Hook Form](https://react-hook-form.com/)** | Gerenciamento de formulários performático e flexível               |
-| **[Zod](https://zod.dev/)**                         | Validação de esquemas TypeScript-first                             |
-| **[Jest](https://jestjs.io/)**                      | Framework de testes unitários em JavaScript/TypeScript             |
-
-## Testes
-
-O projeto utiliza **[Jest](https://jestjs.io/)** para garantir a confiabilidade das funcionalidades principais.
-
-### Executar os testes
-
-```sh
-# Rodar todos os testes
-npm run test
-
-# Rodar em modo watch (reexecuta ao salvar)
-npm run test:watch
-
-# Gerar relatório de cobertura
-npm run test:coverage
-```
-
-### O que é testado
-
-Todos os testes estão em `reservation-utils.test.ts` e cobrem as funções utilitárias do arquivo `lib/reservation-utils.ts`:
-
-| Função              | Casos de teste                                                        |
-| ------------------- | --------------------------------------------------------------------- |
-| `timeToMinutes`     | Conversão de string `HH:MM` para minutos totais                       |
-| `isValidTimeRange`  | Valida faixa mínima de 30min, horário mínimo 07:00 e ordem início/fim |
-| `getTimeOptions`    | Geração da lista de opções de horário (inclui 07:00 até 17:00+)       |
-| `formatDate`        | Formatação de datas no padrão pt-BR (`dd/mm/aaaa`)                    |
-| `checkTimeConflict` | Detecção de sobreposição de reservas por sala e data                  |
-| `generateTimeSlots` | Geração de slots de 30 em 30 minutos a partir de 07:00                |
+| Tecnologia                                                   | Descrição                                                         |
+| ------------------------------------------------------------ | ----------------------------------------------------------------- |
+| **[React](https://react.dev/)**                              | Biblioteca para construção de interfaces de usuário               |
+| **[Vite](https://vitejs.dev/)**                              | Build tool ultrarrápida para desenvolvimento moderno              |
+| **[React Router DOM](https://reactrouter.com/)**             | Roteamento client-side para SPAs                                  |
+| **[Supabase](https://supabase.com/)**                        | Backend-as-a-Service: autenticação, banco de dados e APIs REST    |
+| **[Tailwind CSS](https://tailwindcss.com/)**                 | Framework CSS utilitário para layouts responsivos e customizáveis |
+| **[Shadcn/ui](https://ui.shadcn.com/)**                      | Componentes pré-construídos e acessíveis baseados em Tailwind     |
+| **[React Hook Form](https://react-hook-form.com/)**          | Gerenciamento de formulários performático e flexível              |
+| **[Zod](https://zod.dev/)**                                  | Validação de esquemas TypeScript-first                            |
 
 ## Começando
 
-### Pré-requisito
-
-Antes de começar a usar o projeto, certifique-se de que seu ambiente atenda aos seguintes requisitos:
+### Pré-requisitos
 
 - **Node.js** (versão 18 ou superior)
 - **Git** (para clonar o repositório)
-- **Banco de Dados Relacional** — recomenda-se PostgreSQL
+- **Conta no [Supabase](https://supabase.com/)** (gratuita)
 - **Gerenciador de Pacotes**: npm ou pnpm
+
+### Configuração do Supabase
+
+**1. Crie um projeto no [Supabase](https://supabase.com/).**
+
+**2. Execute o script de migração** no **SQL Editor** do Supabase:
+
+- Abra o arquivo `supabase/migrations/001_init.sql`
+- Cole o conteúdo no SQL Editor e execute
+
+**3. Promova o primeiro administrador** (substitua pelo seu e-mail):
+
+```sql
+UPDATE profiles SET role = 'ADMIN' WHERE email = 'admin@zetta.com.br';
+```
 
 ### Instalação
 
@@ -132,13 +107,11 @@ pnpm install
 
 - Crie um arquivo `.env` na raiz do projeto.
 - Copie as variáveis do arquivo `.env.example` para o `.env`.
-- Edite o `.env` com suas configurações (`DATABASE_URL`, `BETTER_AUTH_SECRET`, etc.).
+- Preencha com as credenciais do seu projeto Supabase (encontradas em **Project Settings → API**):
 
-**4. Configure o banco de dados com Prisma:**
-
-```sh
-npx prisma generate
-npx prisma migrate dev
+```env
+VITE_SUPABASE_URL=https://seu-projeto-id.supabase.co
+VITE_SUPABASE_ANON_KEY=sua-chave-anonima
 ```
 
 ### Uso
@@ -149,8 +122,12 @@ Inicie o servidor de desenvolvimento:
 npm run dev
 ```
 
-- Acesse [http://localhost:3000](http://localhost:3000) no seu navegador.
+- Acesse [http://localhost:5173](http://localhost:5173) no seu navegador.
 
-## Zetta
+### Deploy na Vercel
 
-**Zetta** — Soluções corporativas de software.
+O projeto inclui `vercel.json` com as regras de rewrite para SPA. Basta conectar o repositório na Vercel e adicionar as variáveis de ambiente `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` nas configurações do projeto.
+
+## Sobre
+
+Desenvolvido pela **Zetta** — Soluções corporativas de software.

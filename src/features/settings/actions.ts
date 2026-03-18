@@ -1,62 +1,38 @@
-"use server";
+import { supabase } from "@/lib/supabase";
+import { mapRoom, type Room } from "@/types/database";
 
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
+export async function getRooms(): Promise<Room[]> {
+  const { data, error } = await supabase
+    .from("rooms")
+    .select("*")
+    .order("created_at");
 
-export async function getRooms() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session) throw new Error("Não autorizado");
-
-  return db.room.findMany({
-    orderBy: { createdAt: "asc" },
-  });
+  if (error) throw error;
+  return (data ?? []).map(mapRoom);
 }
 
-export async function createRoom() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
+export async function createRoom(): Promise<void> {
+  const { error } = await supabase.from("rooms").insert({
+    name: "Nova Sala",
+    capacity: 6,
+    resources: [],
   });
-
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
-
-  await db.room.create({
-    data: {
-      name: "Nova Sala",
-      capacity: 6,
-      resources: [],
-    },
-  });
-
-  revalidatePath("/dashboard/settings");
+  if (error) throw error;
 }
 
 export async function updateRoom(
   roomId: string,
-  data: {
-    name: string;
-    capacity: number;
-    resources: string[];
-  },
-) {
-  await db.room.update({
-    where: { id: roomId },
-    data,
-  });
-
-  revalidatePath("/dashboard/settings");
+  data: { name: string; capacity: number; resources: string[] },
+): Promise<void> {
+  const { error } = await supabase
+    .from("rooms")
+    .update({ name: data.name, capacity: data.capacity, resources: data.resources })
+    .eq("id", roomId);
+  if (error) throw error;
 }
 
-export async function deleteRoom(roomId: string) {
-  await db.room.delete({
-    where: { id: roomId },
-  });
-
-  revalidatePath("/dashboard/settings");
+export async function deleteRoom(roomId: string): Promise<void> {
+  const { error } = await supabase.from("rooms").delete().eq("id", roomId);
+  if (error) throw error;
 }
+

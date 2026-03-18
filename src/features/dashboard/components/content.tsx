@@ -8,7 +8,7 @@ import ReservationForm from "@/features/dashboard/components/reservatio-form";
 import ReservationList from "@/features/dashboard/components/reservation-list";
 import TimeGrid from "@/features/dashboard/components/time-grid";
 import WeeklyCalendar from "@/features/dashboard/components/weekly-calendar";
-import { Reservation, Room } from "@/lib/generated/prisma/client";
+import type { Reservation, Room } from "@/types/database";
 import { formatDate } from "@/lib/reservation-utils";
 import { formatDateInput } from "@/lib/utils";
 import { Calendar, CalendarDays, LayoutGrid, Plus } from "lucide-react";
@@ -18,9 +18,10 @@ import RoomList from "./room-list";
 type Props = {
   rooms: Room[];
   reservations: ReservationWithUser[];
+  onRefresh: () => void;
 };
 
-const Content = ({ rooms, reservations }: Props) => {
+const Content = ({ rooms, reservations, onRefresh }: Props) => {
   const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [formOpen, setFormOpen] = useState(false);
@@ -217,6 +218,7 @@ const Content = ({ rooms, reservations }: Props) => {
           setFormOpen(false);
           setEditingReservation(null);
           setDefaultSlot({});
+          onRefresh();
         }}
         editReservation={editingReservation}
         defaultRoomId={defaultSlot.roomId}

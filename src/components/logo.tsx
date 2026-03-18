@@ -1,9 +1,9 @@
-import Link from "next/link";
+import { Link } from "react-router-dom";
 
 export const Logo = () => {
   return (
     <Link
-      href="/dashboard"
+      to="/dashboard"
       className="group flex cursor-pointer items-center space-x-2.5"
     >
       <div className="relative flex size-9 items-center justify-center rounded-xl bg-primary shadow-md shadow-primary/30
@@ -23,3 +23,4 @@ export const Logo = () => {
     </Link>
   );
 };
+

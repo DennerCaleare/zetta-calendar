@@ -1,7 +1,5 @@
-"use client";
-
 import { signOut } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 interface LogoutButtonProps {
@@ -10,19 +8,15 @@ interface LogoutButtonProps {
 }
 
 const LogoutButton = ({ children, className }: LogoutButtonProps) => {
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const handleSignOut = async () => {
-    await signOut({
-      fetchOptions: {
-        onSuccess: () => {
-          router.push("/");
-        },
-        onError: (ctx) => {
-          toast.error(ctx.error.message);
-        },
-      },
-    });
+    const { error } = await signOut();
+    if (error) {
+      toast.error(error.message);
+    } else {
+      navigate("/auth/login");
+    }
   };
 
   return (
@@ -33,3 +27,4 @@ const LogoutButton = ({ children, className }: LogoutButtonProps) => {
 };
 
 export default LogoutButton;
+

@@ -1,71 +1,66 @@
-"use server";
-
-import { auth } from "@/lib/auth";
-import { UserRole } from "@/lib/generated/prisma/client";
-import { db } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
+import { supabase } from "@/lib/supabase";
+import type { Profile, UserRole } from "@/types/database";
 import z from "zod";
 import { createUserSchema } from "./schemas";
 
 async function requireAdmin() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Não autorizado");
 
-  if (!session || session.user.role !== "ADMIN") {
-    throw new Error("Não autorizado");
-  }
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "ADMIN") throw new Error("Não autorizado");
 }
 
-export async function getUsers() {
+export async function getUsers(): Promise<Profile[]> {
   await requireAdmin();
 
-  return db.user.findMany({
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-    },
-    orderBy: { name: "asc" },
-  });
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, name, email, role")
+    .order("name");
+
+  if (error) throw error;
+  return (data ?? []) as Profile[];
 }
 
 export async function createUser(data: z.infer<typeof createUserSchema>) {
   await requireAdmin();
 
   const validatedFields = createUserSchema.safeParse(data);
-
   if (!validatedFields.success) {
-    return {
-      error: "Falha ao criar usuário, verifique os dados digitados",
-    };
+    return { error: "Falha ao criar usuário, verifique os dados digitados" };
   }
 
-  const { name, email, password } = validatedFields.data;
-
+  const { name, email, password, role } = validatedFields.data;
   if (!password) {
-    return {
-      error: "Falha ao criar usuário, verifique os dados digitados",
-    };
+    return { error: "Falha ao criar usuário, verifique os dados digitados" };
   }
 
-  try {
-    await auth.api.signUpEmail({
-      body: {
-        name,
-        email,
-        password,
-      },
-      headers: await headers(),
+  const { data: authData, error: authError } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { name } },
+  });
+
+  if (authError) return { error: "Erro ao criar usuário" };
+
+  if (authData.user) {
+    await supabase.from("profiles").upsert({
+      id: authData.user.id,
+      name,
+      email,
+      role,
     });
-
-    revalidatePath("/dashboard/settings");
-    return { success: true };
-  } catch {
-    return { error: "Erro ao criar usuário" };
   }
+
+  return { success: true };
 }
 
 export async function updateUser(
@@ -74,18 +69,19 @@ export async function updateUser(
 ) {
   await requireAdmin();
 
-  await db.user.update({
-    where: { id },
-    data,
-  });
+  const { error } = await supabase
+    .from("profiles")
+    .update({ name: data.name, email: data.email, role: data.role })
+    .eq("id", id);
 
-  revalidatePath("/dashboard/settings");
+  if (error) throw error;
 }
 
 export async function deleteUser(id: string) {
   await requireAdmin();
 
-  await db.user.delete({ where: { id } });
-
-  revalidatePath("/dashboard/settings");
+  // Deletes the profile; the auth.users record must be removed via Supabase dashboard or admin API
+  const { error } = await supabase.from("profiles").delete().eq("id", id);
+  if (error) throw error;
 }
+
